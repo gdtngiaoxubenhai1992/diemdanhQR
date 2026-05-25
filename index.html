@@ -125,7 +125,7 @@ function onScan(text){
 // ================== SEND (ONLINE/OFFLINE) ==================
 function sendData(text){
 
-  fetch("https://script.google.com/macros/s/AKfycbzIF0JipIfc3zDU5NlRTbGXtJnXA-gripQ2lqH5xLu5r32UJ52vc6LP4SAFnyAi2ULcpQ/exec?mtn=" + encodeURIComponent(text)) // thay URL gsheet 2 chỗ (1)
+  fetch("https://script.google.com/macros/s/AKfycbxIvsojmleGe-62NmI3iWC60iDd2c5y8S6HV7QV9Eqfblf634cdKkubCHMi78LZkMmm/exec?mtn=" + encodeURIComponent(text)) // thay URL gsheet sau khi deploy web app (2 chỗ (1))
   .then(r => r.json())
   .then(res => {
 
@@ -230,7 +230,7 @@ setInterval(() => {
   const item = offlineQueue.shift();
   saveQueue();
 
-  fetch("https://script.google.com/macros/s/AKfycbzIF0JipIfc3zDU5NlRTbGXtJnXA-gripQ2lqH5xLu5r32UJ52vc6LP4SAFnyAi2ULcpQ/exec?mtn=" + encodeURIComponent(item));// thay URL gsheet (2)
+  fetch("https://script.google.com/macros/s/AKfycbxIvsojmleGe-62NmI3iWC60iDd2c5y8S6HV7QV9Eqfblf634cdKkubCHMi78LZkMmm/exec?mtn=" + encodeURIComponent(item));// thay URL gsheet sau khi deploy web app (2 chỗ (1))
 
 }, 5000);
 
