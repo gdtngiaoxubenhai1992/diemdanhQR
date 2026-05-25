@@ -26,23 +26,93 @@ button{
   font-size:15px;
   border-radius:8px;
 }
+  #popup{
+
+  position:fixed;
+
+  top:50%;
+  left:50%;
+
+  transform:translate(-50%,-50%);
+
+  background:#111;
+
+  color:white;
+
+  padding:30px;
+
+  border-radius:20px;
+
+  width:85%;
+
+  z-index:9999;
+
+  font-size:28px;
+
+  font-weight:bold;
+
+  display:none;
+
+  box-shadow:0 0 30px #000;
+}
+
+#popup.popup-success{
+  border:3px solid #00ff99;
+  color:#00ff99;
+}
+
+#popup.popup-error{
+  border:3px solid #ff4444;
+  color:#ff4444;
+}
+  #popup.show{
+  animation:pop 0.2s ease;
+}
+
+@keyframes pop{
+
+  from{
+    transform:translate(-50%,-50%) scale(0.7);
+    opacity:0;
+  }
+
+  to{
+    transform:translate(-50%,-50%) scale(1);
+    opacity:1;
+  }
+}
 </style>
 </head>
 
 <body>
 
 <h2>📷 QR Điểm Danh PRO</h2>
-
+<button onclick="enableSound()">
+🔊 Bật âm thanh
+</button>
 <button onclick="switchCamera()">🔄 Camera</button>
 <button onclick="toggleFlash()">🔦 Flash</button>
 
 <div id="reader"></div>
 <div id="result">Sẵn sàng quét</div>
-
+<div id="popup"></div>
 <script>
 
 const result = document.getElementById("result");
+const popup =
+  document.getElementById("popup");
 
+const successAudio = new Audio(
+  "https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"
+);
+
+const errorAudio = new Audio(
+  "https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
+);
+
+// preload
+successAudio.load();
+errorAudio.load();
 let qr = new Html5Qrcode("reader");
 
 let cameras = [];
@@ -53,7 +123,40 @@ let lastCode = "";
 let lastTime = 0;
 
 let flashOn = false;
+let soundEnabled = false;
+  function enableSound(){
 
+  successAudio.volume = 1;
+  errorAudio.volume = 1;
+
+  successAudio.play()
+  .then(()=>{
+
+    successAudio.pause();
+
+    successAudio.currentTime = 0;
+
+    soundEnabled = true;
+
+  });
+
+  errorAudio.play()
+  .then(()=>{
+
+    errorAudio.pause();
+
+    errorAudio.currentTime = 0;
+
+  });
+
+  // test rung
+  if(navigator.vibrate){
+
+    navigator.vibrate([200,100,200]);
+  }
+
+  alert("✅ Đã bật âm thanh & rung");
+}
 // ================== OFFLINE QUEUE ==================
 let offlineQueue = JSON.parse(localStorage.getItem("queue") || "[]");
 
@@ -63,17 +166,61 @@ function saveQueue(){
 
 // ================== BEEP + VIBRATE ==================
 function beep(ok=true){
-  new Audio(
+
+  if(!soundEnabled) return;
+
+  const audio =
     ok
-    ? "https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"
-    : "https://actions.google.com/sounds/v1/alarms/beep_short.ogg"
-  ).play();
+    ? successAudio
+    : errorAudio;
+
+  audio.pause();
+
+  audio.currentTime = 0;
+
+  audio.play()
+  .catch(err=>{
+
+    console.log(err);
+  });
 }
 
-function vibrate(){
-  if(navigator.vibrate) navigator.vibrate(150);
+function vibrate(ok=true){
+
+  if(!navigator.vibrate) return;
+
+  if(ok){
+
+    navigator.vibrate([250,100,250]);
+
+  }else{
+
+    navigator.vibrate([100,50,100]);
+  }
+}
+  
+function showPopup(html, ok=true){
+
+  popup.style.display = "block";
+
+  popup.className =
+  ok
+  ? "popup-success"
+  : "popup-error";
+
+popup.classList.remove("show");
+
+void popup.offsetWidth;
+
+popup.classList.add("show");
+
+  popup.innerHTML = html;
 }
 
+function hidePopup(){
+
+  popup.style.display = "none";
+}
 // ================== DUPLICATE FILTER ==================
 function isDuplicate(code){
   const now = Date.now();
@@ -88,26 +235,66 @@ function isDuplicate(code){
 // ================== START CAMERA ==================
 async function startCamera(id){
 
-  try{
-    if(qr.isScanning){
-      await qr.stop();
-      await qr.clear();
-    }
+try{
 
-    await qr.start(
-      id,
-      {
-        fps: 12,        // ⚡ nhanh hơn
-        qrbox: 260
-      },
-      onScan
-    );
+```
+if(qr.isScanning){
 
-  }catch(e){
-    console.log(e);
-    result.innerHTML = "❌ Camera lỗi";
-  }
+  await qr.stop();
+
+  await qr.clear();
 }
+
+await qr.start(
+
+  id,
+
+  {
+
+    fps:20,
+
+    qrbox:{
+      width:300,
+      height:180
+    },
+
+    aspectRatio:1.777778,
+
+    videoConstraints:{
+      facingMode:"environment"
+    },
+
+    formatsToSupport:[
+
+      Html5QrcodeSupportedFormats.QR_CODE,
+
+      Html5QrcodeSupportedFormats.CODE_128,
+
+      Html5QrcodeSupportedFormats.EAN_13,
+
+      Html5QrcodeSupportedFormats.EAN_8,
+
+      Html5QrcodeSupportedFormats.UPC_A,
+
+      Html5QrcodeSupportedFormats.UPC_E
+    ]
+  },
+
+  onScan
+);
+```
+
+}catch(e){
+
+```
+console.log(e);
+
+result.innerHTML = "❌ Camera lỗi";
+```
+
+}
+}
+
 
 // ================== SCAN ==================
 function onScan(text){
@@ -125,7 +312,7 @@ function onScan(text){
 // ================== SEND (ONLINE/OFFLINE) ==================
 function sendData(text){
 
-  fetch("https://script.google.com/macros/s/AKfycbxIvsojmleGe-62NmI3iWC60iDd2c5y8S6HV7QV9Eqfblf634cdKkubCHMi78LZkMmm/exec?mtn=" + encodeURIComponent(text)) // thay URL gsheet sau khi deploy web app (2 chỗ (1))
+  fetch("https://script.google.com/macros/s/AKfycbxIvsojmleGe-62NmI3iWC60iDd2c5y8S6HV7QV9Eqfblf634cdKkubCHMi78LZkMmm/execmtn=" + encodeURIComponent(text)) // thay URL gsheet sau khi deploy web app (2 chỗ (1))
   .then(r => r.json())
   .then(res => {
 
@@ -150,23 +337,101 @@ function sendData(text){
 function handleResult(res){
 
   beep(res.success);
-  vibrate();
 
-  result.innerHTML = res.success
-    ? `✅ ${res.message}<br><b>${res.name}</b><br>${res.lop}`
-    : `❌ ${res.message}`;
+  vibrate(res.success);
+
+  if(res.success){
+
+    result.innerHTML =
+      `
+      ✅ ${res.message}
+      `;
+
+    showPopup(
+      `
+      ✅ ${res.message}
+
+      <br><br>
+
+      👤 ${res.name}
+
+      <br>
+
+      🏫 ${res.lop}
+      `,
+      true
+    );
+
+    document.body.style.background =
+      "#063";
+
+  }else{
+
+    result.innerHTML =
+      `
+      ❌ ${res.message}
+      `;
+
+    showPopup(
+      `
+      ❌ ${res.message}
+      `,
+      false
+    );
+
+    document.body.style.background =
+      "#500";
+  }
+
+  setTimeout(()=>{
+
+    document.body.style.background =
+      "#111";
+
+  },200);
 
   resetScan();
 }
 
 // ================== RESET ==================
 function resetScan(){
-  setTimeout(() => {
-    scanning = true;
-    result.innerHTML = "📷 Sẵn sàng quét";
-  }, 1200);
-}
 
+  setTimeout(() => {
+
+    hidePopup();
+
+    scanning = true;
+
+    result.innerHTML =
+      "📷 Sẵn sàng quét";
+
+  }, 3000);
+}
+document.body.addEventListener(
+  "click",
+  () => {
+
+    successAudio.play()
+    .then(()=>{
+
+      successAudio.pause();
+
+      successAudio.currentTime = 0;
+
+    }).catch(()=>{});
+
+    errorAudio.play()
+    .then(()=>{
+
+      errorAudio.pause();
+
+      errorAudio.currentTime = 0;
+
+    }).catch(()=>{});
+
+  },
+  { once:true }
+);
 // ================== CAMERA INIT (AUTO BACK CAMERA) ==================
 Html5Qrcode.getCameras().then(devs => {
 
@@ -201,7 +466,10 @@ function switchCamera(){
 async function toggleFlash(){
 
   try{
-    const track = qr.getRunningTrack?.();
+    const track =
+  qr.getRunningTrack
+  ? qr.getRunningTrack()
+  : null;
 
     if(!track){
       alert("Chưa mở camera");
@@ -230,7 +498,7 @@ setInterval(() => {
   const item = offlineQueue.shift();
   saveQueue();
 
-  fetch("https://script.google.com/macros/s/AKfycbxIvsojmleGe-62NmI3iWC60iDd2c5y8S6HV7QV9Eqfblf634cdKkubCHMi78LZkMmm/exec?mtn=" + encodeURIComponent(item));// thay URL gsheet sau khi deploy web app (2 chỗ (1))
+  fetch("https://script.google.com/macros/s/AKfycbxIvsojmleGe-62NmI3iWC60iDd2c5y8S6HV7QV9Eqfblf634cdKkubCHMi78LZkMmm/exec?mtn=" + encodeURIComponent(item));// thay URL gsheet sau khi deploy web app (2 chỗ (2))
 
 }, 5000);
 
