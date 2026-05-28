@@ -81,7 +81,36 @@ button{
     opacity:1;
   }
 }
+#scanBtn{
 
+  position:fixed;
+
+  bottom:20px;
+
+  left:50%;
+
+  transform:translateX(-50%);
+
+  width:85%;
+
+  max-width:500px;
+
+  padding:22px;
+
+  font-size:28px;
+
+  font-weight:bold;
+
+  border-radius:20px;
+
+  background:#00aa55;
+
+  color:white;
+
+  z-index:9999;
+
+  box-shadow:0 0 20px rgba(0,0,0,.4);
+}
 </style>
 </head>
 
@@ -92,19 +121,18 @@ button{
 <button onclick="enableSound()">
 🔊 Bật âm thanh
 </button>
-
-<button onclick="switchCamera()">
-🔄 Camera
-</button>
-
 <button onclick="toggleFlash()">
 🔦 Flash
 </button>
 
-<div id="reader"></div>
+<div id="reader" style="display:none;"></div>
+
+<button onclick="openScanner()" id="scanBtn">
+📷 Bắt đầu quét
+</button>
 
 <div id="result">
-📷 Sẵn sàng quét
+📷 Nhấn bắt đầu để quét
 </div>
 
 <div id="popup"></div>
@@ -132,8 +160,6 @@ let html5QrCode = new Html5Qrcode("reader");
 
 let cameras = [];
 
-let cameraIndex = 0;
-
 let scanning = true;
 
 let lastCode = "";
@@ -143,6 +169,8 @@ let lastTime = 0;
 let flashOn = false;
 
 let cameraStarted = false;
+
+let scannerOpened = false;
 
 
 // ================= SOUND =================
@@ -247,15 +275,27 @@ function isDuplicate(code){
 
   return false;
 }
+async function openScanner(){
 
+  if(cameraStarted) return;
+
+  document.getElementById("reader").style.display =
+    "block";
+
+  document.getElementById("scanBtn").style.display =
+    "none";
+
+  result.innerHTML =
+    "📷 Đang mở camera...";
+
+  startCamera();
+}
 
 // ================= START CAMERA =================
 
-async function startCamera(cameraId){
+async function startCamera(){
 
   try{
-
-    result.innerHTML = "📷 Đang mở camera...";
 
     if(cameraStarted){
 
@@ -266,7 +306,9 @@ async function startCamera(cameraId){
 
     await html5QrCode.start(
 
-      cameraId,
+      {
+        facingMode:"environment"
+      },
 
       {
         fps:20,
@@ -276,11 +318,7 @@ async function startCamera(cameraId){
           height:180
         },
 
-        aspectRatio:1.777,
-
-        videoConstraints:{
-          facingMode:"environment"
-        }
+        aspectRatio:1.777
       },
 
       onScan
@@ -297,8 +335,29 @@ async function startCamera(cameraId){
     result.innerHTML = "❌ Không mở được camera";
   }
 }
+// ================= Stop CAMERA =================
+  async function stopCamera(){
 
+  try{
 
+    if(cameraStarted){
+
+      await html5QrCode.stop();
+
+      cameraStarted = false;
+    }
+
+  }catch(e){
+
+    console.log(e);
+  }
+
+  document.getElementById("reader").style.display =
+    "none";
+
+  document.getElementById("scanBtn").style.display =
+    "block";
+}
 // ================= SCAN =================
 
 function onScan(decodedText){
@@ -428,40 +487,19 @@ function handleResult(res){
 
 function resetScan(){
 
-  setTimeout(()=>{
+  setTimeout(async ()=>{
 
     hidePopup();
 
     scanning = true;
 
     result.innerHTML =
-      "📷 Sẵn sàng quét";
+      "📷 Nhấn bắt đầu để quét";
+
+    await stopCamera();
 
   },1500);
 }
-
-
-// ================= SWITCH CAMERA =================
-
-function switchCamera(){
-
-  if(cameras.length < 2){
-
-    alert("Chỉ có 1 camera");
-
-    return;
-  }
-
-  cameraIndex++;
-
-  if(cameraIndex >= cameras.length){
-
-    cameraIndex = 0;
-  }
-
-  startCamera(cameras[cameraIndex].id);
-}
-
 
 // ================= FLASH =================
 
@@ -527,26 +565,6 @@ Html5Qrcode.getCameras()
   }
 
   cameras = devices;
-
-  let backCamera =
-    devices.find(d =>
-      /back|rear|environment/i.test(d.label)
-    );
-
-  if(backCamera){
-
-    cameraIndex =
-      devices.indexOf(backCamera);
-
-  }else{
-
-    cameraIndex = 0;
-  }
-
-  startCamera(
-    cameras[cameraIndex].id
-  );
-
 })
 
 .catch(err => {
