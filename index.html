@@ -321,6 +321,28 @@ async function openScanner(){
 
   if(cameraStarted) return;
 
+  // unlock audio mobile
+
+  successAudio.play()
+  .then(()=>{
+
+    successAudio.pause();
+
+    successAudio.currentTime = 0;
+
+  })
+  .catch(()=>{});
+
+  errorAudio.play()
+  .then(()=>{
+
+    errorAudio.pause();
+
+    errorAudio.currentTime = 0;
+
+  })
+  .catch(()=>{});
+
   document.getElementById("reader").style.display =
     "block";
 
@@ -433,7 +455,7 @@ function saveQueue(){
 function sendData(text){
 
   fetch(
-    "https://script.google.com/macros/s/AKfycbyo9D1Wkg_cU0L4SFMcFnU3Zu1oXkyMJnFc7xRkGflq6TlQMdv0mh3JslKoDm2UvBKW/exec?mtn=" // Thay link deploy bên appscript (2 chỗ )
+    "https://script.google.com/macros/s/AKfycbzIF0JipIfc3zDU5NlRTbGXtJnXA-gripQ2lqH5xLu5r32UJ52vc6LP4SAFnyAi2ULcpQ/exec?mtn=" // thay link sau khi deploy appscript điemanhQR (2 chỗ)
     + encodeURIComponent(text)
   )
 
@@ -454,10 +476,7 @@ function sendData(text){
     result.innerHTML =
       "📶 Mất mạng - đã lưu";
 
-    beep(false);
-
-    vibrate(false);
-
+    errorEffect();
     resetScan();
   });
 }
@@ -553,7 +572,7 @@ setInterval(()=>{
   saveQueue();
 
   fetch(
-    "https://script.google.com/macros/s/AKfycbyo9D1Wkg_cU0L4SFMcFnU3Zu1oXkyMJnFc7xRkGflq6TlQMdv0mh3JslKoDm2UvBKW/exec?mtn="// Thay link deploy bên appscript (2 chỗ )
+    "https://script.google.com/macros/s/AKfycbzIF0JipIfc3zDU5NlRTbGXtJnXA-gripQ2lqH5xLu5r32UJ52vc6LP4SAFnyAi2ULcpQ/exec?mtn=" // thay link sau khi deploy appscript điemanhQR (2 chỗ)
     + encodeURIComponent(item)
   );
 
